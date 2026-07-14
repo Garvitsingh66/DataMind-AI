@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+venv/
+.venv/
+env/
+
+# Environment secrets
+.env
+.env.local
+*.env
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# DuckDB
+*.duckdb
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Misc
+*.log
