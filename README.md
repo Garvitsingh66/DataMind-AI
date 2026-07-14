@@ -1,9 +1,79 @@
-# AI Data Analyst Copilot
+<div align="center">
 
-Ask business questions in plain English → get generated SQL, a result table, an
-auto-selected chart, statistically-detected anomalies, and a plain-English
-insight. Runs against DuckDB, either querying local CSVs directly or a live
-Postgres/MySQL database.
+# DataMind AI
+
+### AI Data Analyst Copilot
+
+Ask business questions in plain English → get generated SQL, a result table, an interactive chart, and a plain-English insight — powered by **Groq Llama 3.1** and **DuckDB**.
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=black)
+![DuckDB](https://img.shields.io/badge/DuckDB-In--Memory-FFF000?logo=duckdb&logoColor=black)
+![Groq](https://img.shields.io/badge/Groq-Llama%203.1-F55036)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
+</div>
+
+---
+
+## Overview
+
+**DataMind AI** is an end-to-end AI-powered data analysis platform. Upload a CSV, ask a question in natural language, and the app:
+
+1. Converts your question into SQL using an LLM (Groq — Llama 3.1 8B Instant)
+2. Validates and executes the SQL safely on DuckDB
+3. Returns a results table, an auto-generated chart, and a business-insight summary
+
+No SQL knowledge required — just ask.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%">
+
+**Ask a question, get SQL + insights**
+
+![Revenue by region](Images/revenue_by_region.png)
+
+</td>
+<td width="50%">
+
+**Interactive chart**
+
+![Chart view](Images/chart_view.png)
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+**Query history & result table**
+
+![Result table](Images/result_table.png)
+
+</td>
+</tr>
+</table>
+
+## Features
+
+- 📁 **Upload CSV Files** — drag & drop, automatic schema detection, dynamic table creation in DuckDB
+- 🧠 **AI SQL Generation** — ask things like *"Show monthly sales"* or *"Top 10 customers"* and get an executable SQL query
+- ⚙️ **Safe SQL Execution** — query validation, execution timeout, and error handling before anything touches your data
+- 📊 **AI Insights** — plain-English summaries covering trends, anomalies, and recommendations
+- 📈 **Interactive Dashboard** — generated SQL, results table, AI explanation, charts (bar / line / pie / scatter), and full query history
+- 📤 **Export** — download results as CSV, Excel, or PDF, or copy the generated SQL
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React.js, Vite, JavaScript, CSS, Fetch API |
+| Backend | FastAPI, Python, DuckDB, Pandas |
+| AI / LLM | Groq API, Llama 3.1 8B Instant, Prompt Engineering |
+| Data | CSV Upload, DuckDB In-Memory Database, Dynamic Table Creation |
 
 ## Architecture
 
@@ -14,7 +84,7 @@ question
 schema retrieval (keyword overlap over table/column names)
    │
    ▼
-Hugging Face (free Inference API) → generates SQL + explanation (JSON)
+Groq (Llama 3.1) → generates SQL + explanation (JSON)
    │
    ▼
 SQL guard: SELECT-only, no multi-statement, blocklist, LIMIT clamp
@@ -23,147 +93,85 @@ SQL guard: SELECT-only, no multi-statement, blocklist, LIMIT clamp
 DuckDB executes query
    │
    ├──► anomaly.py: z-score outliers + period-over-period spike/dip detection
-   ├──► charting.py: rule-based chart-type selection → Plotly figure JSON
-   └──► Hugging Face → plain-English insight, grounded in computed stats + anomalies
+   ├──► charting.py: rule-based chart-type selection → chart figure
+   └──► Groq → plain-English insight, grounded in computed stats + anomalies
    │
    ▼
 JSON response → frontend renders SQL, table, chart, insight, anomalies
 ```
 
-Two separate LLM calls are used, not one: SQL generation and insight
-narration have different failure modes and different amounts of context
-(schema vs. computed results), so keeping them separate makes each prompt
-simpler and easier to debug. Chart-type selection is deliberately **not**
-an LLM call — it's a cheap, deterministic rule based on the result set's
-column types, which is both faster and more reliable than asking a model to
-pick a chart type from a text description.
+## Getting Started
 
-This project uses Hugging Face's free serverless Inference API
-(`app/llm.py`, via the `huggingface_hub` SDK, forced to the `hf-inference`
-provider so it stays on the free rate-limited tier rather than billing
-through a paid routed provider). Swapping to a different provider
-(Anthropic, OpenAI, Gemini) only requires editing `app/llm.py` and
-`app/config.py` — nothing else in the pipeline depends on which model is
-behind it.
+### Prerequisites
 
-## Project layout
+- Python 3.11+
+- Node.js 18+
+- A [Groq API key](https://console.groq.com)
 
-```
-app/
-  main.py            FastAPI app: /ask, /schema, /history, /health
-  db.py               DuckDB connection, CSV loading, optional Postgres attach
-  schema_catalog.py   Builds schema text for prompts; keyword-based table retrieval
-  llm.py              Hugging Face API calls: NL->SQL, insight generation
-  sql_guard.py        SELECT-only validation, keyword blocklist, LIMIT enforcement
-  anomaly.py          Z-score + period-over-period anomaly detection
-  charting.py         Rule-based chart type selection + Plotly figure builder
-  models.py           Pydantic request/response schemas
-  config.py           Settings from environment variables
-data/
-  sales.csv           Synthetic demo dataset (2 years of daily sales, with
-                       two injected anomalies for testing)
-frontend/
-  index.html          Minimal single-page UI to exercise the API
-```
-
-## Setup
+### Backend Setup
 
 ```bash
-cd ai_data_analyst_copilot
-python3 -m venv venv && source venv/bin/activate
+# clone the repo
+git clone https://github.com/Garvitsingh66/DataMind-AI.git
+cd DataMind-AI
+
+# install dependencies
 pip install -r requirements.txt
 
+# configure environment
 cp .env.example .env
-# edit .env and set HF_API_KEY
+# edit .env and add your GROQ_API_KEY
+
+# run the API
+uvicorn app.main:app --reload
 ```
 
-Get a free token from **https://huggingface.co/settings/tokens** (sign up if
-you don't have an account, then click **Create new token**, type "Read" is
-enough). No credit card required for the default free tier used here.
-
-The default model (`Qwen/Qwen2.5-7B-Instruct`) runs on Hugging Face's free,
-rate-limited serverless Inference API. If that specific model ever becomes
-unavailable on the free tier, browse alternatives at
-https://huggingface.co/models?inference_provider=hf-inference&pipeline_tag=text-generation
-and swap `MODEL_NAME` in `.env` — any instruction-tuned chat model under
-about 10B parameters listed there should work as a drop-in replacement.
-
-## Run
+### Frontend Setup
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+cd frontend
+npm install
+npm run dev
 ```
 
-Then open `frontend/index.html` directly in a browser (it calls
-`http://localhost:8000` — update `API_BASE` in the file if you deploy the
-API elsewhere), or use curl:
+The app will be available at `http://localhost:5173`, with the API running at `http://localhost:8000`.
 
-```bash
-curl -X POST http://localhost:8000/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What was total revenue by region for 2025?"}'
-```
+### Environment Variables
 
-Other endpoints:
-- `GET /schema` — full introspected schema (tables, columns, sample rows)
-- `GET /history` — recent questions asked this session
-- `GET /health` — liveness check + list of loaded tables
+| Variable | Description |
+|---|---|
+| `GROQ_API_KEY` | Your Groq API key |
+| `MODEL_NAME` | LLM model, e.g. `llama-3.1-8b-instant` |
+| `DATA_DIR` | Directory for uploaded CSVs |
+| `DUCKDB_PATH` | Path to persist DuckDB (empty = in-memory) |
+| `MAX_ROWS` | Max rows returned per query |
+| `QUERY_TIMEOUT_SECONDS` | SQL execution timeout |
 
-## Using your own data
+## Usage
 
-**CSVs:** drop any `.csv` files into `data/` — each becomes a table named
-after the file (e.g. `orders.csv` → table `orders`). Restart the server to
-reload.
+1. Start the backend and frontend (see above)
+2. Drag and drop a CSV file into the dashboard
+3. Ask a question in the chat box, e.g. *"What was total revenue by region for 2025?"*
+4. View the generated SQL, results table, chart, and AI-written insight
+5. Export results as CSV, Excel, or PDF as needed
 
-**A live database:** call `engine.attach_postgres(connection_string)` from
-`app/db.py` (or add an equivalent call at startup in `main.py`). DuckDB's
-Postgres/MySQL scanner extensions let you query the live database directly
-without copying data — the rest of the pipeline (schema retrieval, SQL
-generation, guard rails, anomaly detection, charting) works unchanged.
+## Roadmap
 
-## Troubleshooting the free Hugging Face tier
+- [ ] Support for live Postgres / MySQL connections
+- [ ] Multi-table joins in natural language
+- [ ] Scheduled/recurring reports
+- [ ] User authentication & saved dashboards
 
-- **"Model not found" / 404 on a chat completion**: the free `hf-inference`
-  provider only hosts a rotating subset of models, and availability changes.
-  Pick a different model from the link above and update `MODEL_NAME`.
-- **429 / rate limited**: the free tier has fairly tight per-hour request
-  limits. Wait a bit, or upgrade to Hugging Face PRO ($9/month) for higher
-  limits — see `app/llm.py`'s `InferenceClient(provider="hf-inference", ...)`
-  call, which is the only place that would need to change if you switch to a
-  paid routed provider (Together, Groq, Fireworks, etc. all work through the
-  same `huggingface_hub` client, just with a different `provider=` value).
-- **Malformed JSON from the model**: smaller open models are less reliable
-  at strictly following "return only JSON" instructions than frontier
-  closed models. `llm.py`'s `_extract_json()` already strips markdown
-  fences and grabs the outermost `{...}` block to compensate, but if a
-  specific model consistently fails, try a different one — instruction-
-  tuned models in the 7B+ range (Qwen2.5, Llama 3.1) tend to be reliable
-  enough for this structured-output task.
+## Contributing
 
-## Safety notes for going to production
+Contributions are welcome. Please open an issue to discuss what you'd like to change before submitting a pull request.
 
-- `sql_guard.py` currently blocks writes/DDL and multi-statement queries and
-  clamps row limits. For a real production DB, also run the DB connection
-  itself with a **read-only** role — the app-level guard is defense in depth,
-  not a substitute for DB-level permissions.
-- Consider adding a "confirm before run" step in the UI for anything that
-  will inform a decision — the `/ask` endpoint already supports this via the
-  `confirmed_sql` field, so you can show the generated SQL first and only
-  execute after the user approves it.
-- The schema-retrieval step is keyword-based, which is a fine baseline up to
-  a few dozen tables. For larger schemas, swap `relevant_tables()` in
-  `schema_catalog.py` for embedding-based retrieval over table/column
-  descriptions.
-- `/history` is in-memory only and resets on restart — swap for a database
-  table if you need it to persist across deployments or across users.
+## License
 
-## Demo data
+This project is licensed under the MIT License.
 
-`data/sales.csv` is synthetic: ~4,300 rows of daily transactions across 4
-regions, 4 products, and 3 customer segments from July 2024–June 2026, with
-two anomalies deliberately injected so you can test the detector:
-- A revenue spike in APAC for "Insight Pro", March 10–14, 2026
-- A revenue crash in LATAM, May 1–7, 2026
+---
 
-Try asking: *"Show daily revenue trend for APAC in March 2026"* or
-*"Show weekly revenue for LATAM in 2026"* to see both flagged.
+<div align="center">
+Built by <a href="https://github.com/Garvitsingh66">Garvitsingh66</a>
+</div>
